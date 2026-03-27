@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "grpc.generated.energy";
+option java_outer_classname = "EnergyOptimizationServiceImpl";
+
+package energy;
+
+// The energy optimization service definition.
+service EnergyOptimizationService {
+
+  // Optimizes lighting based on traffic and energy usage
+  rpc OptimizeLighting (OptimizationRequest) returns (OptimizationResponse) {}
+  rpc monitorEnergy(stream OptimizationRequest) returns (stream OptimizationResponse);
+}
+
+// The request message for optimization
+message OptimizationRequest {
+  string locationID = 1;
+  string trafficDensity = 2;
+  float currentEnergyConsumption = 3;
+}
+
+// The response message containing optimization result
+message OptimizationResponse {
+  int32 recommendedBrightnessLevel = 1;
+  float estimatedEnergySaving = 2;
+}

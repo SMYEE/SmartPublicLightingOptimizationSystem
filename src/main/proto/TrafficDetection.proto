@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "grpc.generated.traffic";
+option java_outer_classname = "TrafficDetectionServiceImpl";
+
+package traffic;
+
+// The traffic detection service definition.
+service TrafficDetectionService {
+
+  // Gets traffic level for a location
+    rpc GetTrafficLevel (TrafficRequest) returns (TrafficResponse) {} 
+    rpc streamTrafficUpdates(TrafficRequest) returns (stream TrafficResponse);
+}
+
+// The request message containing location ID
+message TrafficRequest {
+  string locationID = 1;
+}
+
+// The response message containing traffic details
+message TrafficResponse {
+  int32 vehicleCount = 1;
+  string trafficStatus = 2;
+}

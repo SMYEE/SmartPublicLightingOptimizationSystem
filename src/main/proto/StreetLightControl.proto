@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "grpc.generated.streetlight";
+option java_outer_classname = "StreetLightControlServiceImpl";
+
+package streetlight;
+
+// The street light control service definition.
+service StreetLightControlService {
+
+  // Sets brightness for a street light
+  rpc SetBrightness (SetBrightnessRequest) returns (SetBrightnessResponse) {}
+
+  // Gets current status of a street light
+  rpc GetLightStatus (GetLightStatusRequest) returns (GetLightStatusResponse) {}
+    
+  //  
+  rpc adjustMultipleLights(stream SetBrightnessRequest) returns (SetBrightnessResponse);
+}
+
+// The request message for setting brightness
+message SetBrightnessRequest {
+  string lightID = 1;
+  int32 brightnessLevel = 2;
+}
+
+// The response message for setting brightness
+message SetBrightnessResponse {
+  bool status = 1;
+  string message = 2;
+}
+
+// The request message for getting light status
+message GetLightStatusRequest {
+  string lightID = 1;
+}
+
+// The response message containing light status
+message GetLightStatusResponse {
+  int32 brightnessLevel = 1;
+  float powerConsumption = 2;
+  bool isActive = 3;
+}
