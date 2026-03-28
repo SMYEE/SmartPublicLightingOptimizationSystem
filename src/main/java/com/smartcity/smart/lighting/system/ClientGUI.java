@@ -6,6 +6,8 @@ import grpc.generated.traffic.*;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 
 import javax.swing.*;
@@ -87,6 +89,8 @@ public class ClientGUI {
 
                 StreetLightControlServiceGrpc.StreetLightControlServiceBlockingStub stub =
                         StreetLightControlServiceGrpc.newBlockingStub(channel);
+                
+                stub = attachJwt(stub);
 
                 SetBrightnessResponse response = stub.setBrightness(
                         SetBrightnessRequest.newBuilder()
@@ -113,6 +117,8 @@ public class ClientGUI {
                 
                 StreetLightControlServiceGrpc.StreetLightControlServiceBlockingStub stub =
                         StreetLightControlServiceGrpc.newBlockingStub(channel);
+                
+                stub = attachJwt(stub);
 
                 GetLightStatusResponse status = stub.getLightStatus(
                         GetLightStatusRequest.newBuilder().setLightID(lightID).build()
@@ -134,6 +140,8 @@ public class ClientGUI {
 
                 StreetLightControlServiceGrpc.StreetLightControlServiceStub stub =
                         StreetLightControlServiceGrpc.newStub(channel);
+                
+                stub = attachJwt(stub);
 
                 CountDownLatch latch = new CountDownLatch(1);
 
@@ -181,6 +189,8 @@ public class ClientGUI {
 
                 TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub stub =
                         TrafficDetectionServiceGrpc.newBlockingStub(channel);
+                
+                stub = attachJwt(stub);
 
                 TrafficResponse traffic = stub.getTrafficLevel(
                         TrafficRequest.newBuilder().setLocationID(location).build()
@@ -202,6 +212,8 @@ public class ClientGUI {
 
                 TrafficDetectionServiceGrpc.TrafficDetectionServiceStub stub =
                         TrafficDetectionServiceGrpc.newStub(channel);
+                
+                stub = attachJwt(stub);
 
                 CountDownLatch latch = new CountDownLatch(1);
 
@@ -245,16 +257,27 @@ public class ClientGUI {
 
                 EnergyOptimizationServiceGrpc.EnergyOptimizationServiceBlockingStub stub =
                         EnergyOptimizationServiceGrpc.newBlockingStub(channel);
-
-                OptimizationResponse response = stub.optimizeLighting(
+                              
+                stub = attachJwt(stub);
+                
+                OptimizationRequest request = OptimizationRequest.newBuilder()
+                .setLocationID("ZONE_A")
+                .setCurrentEnergyConsumption(50f)
+                .build();
+                
+                OptimizationResponse response = stub
+                        .withDeadlineAfter(3, TimeUnit.SECONDS)
+                        .optimizeLighting(
                         OptimizationRequest.newBuilder().setLocationID(location).build()
                 );
 
                 resultArea.append("[Unary] Energy optimization for " + location + ": Brightness="
                         + response.getRecommendedBrightnessLevel()
                         + ", Estimated Saving=" + response.getEstimatedEnergySaving() + "\n");
-            } catch (Exception ex) {
-                resultArea.append("Error optimizing energy: " + ex.getMessage() + "\n");
+                
+                channel.shutdown();
+            } catch (io.grpc.StatusRuntimeException ex) {
+                resultArea.append("Error optimizing energy: " + ex.getStatus().getDescription() + "\n");
             }
         });
 
@@ -267,6 +290,8 @@ public class ClientGUI {
 
                 EnergyOptimizationServiceGrpc.EnergyOptimizationServiceStub stub =
                         EnergyOptimizationServiceGrpc.newStub(channel);
+                
+                stub = attachJwt(stub);
 
                 CountDownLatch latch = new CountDownLatch(1);
 
@@ -302,6 +327,19 @@ public class ClientGUI {
             } catch (Exception ex) {
                 resultArea.append("Error in bi-directional streaming: " + ex.getMessage() + "\n");
             }
-        });
+        });       
+    }
+    
+    // --- for JWT token
+    private static <T extends io.grpc.stub.AbstractStub<T>> T attachJwt(T stub) {
+        String jwtToken = JwtUtil.generateToken("GUI-Client");
+
+        Metadata metadata = new Metadata();
+        Metadata.Key<String> authKey =
+            Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
+
+        metadata.put(authKey, jwtToken);
+
+        return MetadataUtils.attachHeaders(stub, metadata);
     }
 }
