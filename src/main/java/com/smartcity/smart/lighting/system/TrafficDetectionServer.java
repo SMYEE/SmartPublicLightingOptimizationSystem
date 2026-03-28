@@ -4,8 +4,10 @@
  */
 package com.smartcity.smart.lighting.system;
 import grpc.generated.traffic.*;
+import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 /**
  *
@@ -17,6 +19,7 @@ public class TrafficDetectionServer {
     public static void main(String[] args) throws Exception {
         Server server = ServerBuilder.forPort(50052)
                 .addService(new TrafficServiceImpl())
+                .intercept(new JwtServerInterceptor())
                 .build();
 
         server.start();
@@ -28,7 +31,11 @@ public class TrafficDetectionServer {
 
         @Override
         public void getTrafficLevel(TrafficRequest request, StreamObserver<TrafficResponse> responseObserver) {
-
+            try{
+            if (request.getLocationID().isEmpty()) {
+            throw new IllegalArgumentException("Location cannot be empty");
+            }
+                        
             TrafficResponse response = TrafficResponse.newBuilder()
                     .setVehicleCount(25)
                     .setTrafficStatus("Medium")
@@ -36,6 +43,15 @@ public class TrafficDetectionServer {
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+            } catch (IllegalArgumentException e) {        
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
+            );
+            } catch (Exception e) {        
+            responseObserver.onError(
+                Status.INTERNAL.withDescription("Traffic service error").asRuntimeException()
+            );
+        }
         }
         @Override
         public void streamTrafficUpdates(TrafficRequest request, StreamObserver<TrafficResponse> responseObserver) { // <<< MODIFIED / NEW
@@ -51,7 +67,9 @@ public class TrafficDetectionServer {
                     }
                     responseObserver.onCompleted();
                 } catch (InterruptedException e) {
-                    responseObserver.onError(e); // <<< Error handling
+                    responseObserver.onError(
+                    Status.INTERNAL.withDescription("Streaming interrupted").asRuntimeException()
+                    );
                 }
             }).start();
         }

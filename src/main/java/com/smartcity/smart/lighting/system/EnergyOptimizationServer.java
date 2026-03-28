@@ -9,9 +9,13 @@ import grpc.generated.traffic.*;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
+import java.util.concurrent.TimeUnit;
 /**
  *
  * @author darkp
@@ -22,6 +26,7 @@ public class EnergyOptimizationServer {
     public static void main(String[] args) throws Exception {
         Server server = ServerBuilder.forPort(50053)
                 .addService(new EnergyServiceImpl())
+                .intercept(new JwtServerInterceptor())
                 .build();
 
         server.start();
@@ -34,23 +39,34 @@ public class EnergyOptimizationServer {
         @Override
         public void optimizeLighting(OptimizationRequest request, StreamObserver<OptimizationResponse> responseObserver) {
              try {
+            if (request.getLocationID().isEmpty()) {
+            throw new IllegalArgumentException("Location ID cannot be empty");
+            } 
+            
             // Call Traffic Service
             ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
                     .usePlaintext()
                     .build();
 
             TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub =
-                    TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel);
-
+                    TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
+                    .withDeadlineAfter(3, TimeUnit.SECONDS);
+            String jwtToken = JwtUtil.generateToken("Energy-Service");
+            Metadata metadata = new Metadata();
+            Metadata.Key<String> authKey =
+                Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
+            metadata.put(authKey, jwtToken);
+            trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
+                    
             TrafficResponse traffic = trafficStub.getTrafficLevel(
                     TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
             );
 
             int brightness;
 
-            if (traffic.getTrafficStatus().equals("Low")) {
+            if (traffic.getTrafficStatus().toLowerCase().equals("low")) {
                 brightness = 30;
-            } else if (traffic.getTrafficStatus().equals("Medium")) {
+            } else if (traffic.getTrafficStatus().toLowerCase().equals("medium")) {
                 brightness = 60;
             } else {
                 brightness = 90;
@@ -65,9 +81,15 @@ public class EnergyOptimizationServer {
             responseObserver.onCompleted();
 
             trafficChannel.shutdown();
-        } catch (Exception e) 
+        } 
+        catch (IllegalArgumentException e) {        
+        responseObserver.onError(
+                Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
+        );
+        }
+        catch (Exception e) 
         {
-            responseObserver.onError(e); 
+            responseObserver.onError(Status.INTERNAL.withDescription("Energy service error").asRuntimeException()); 
         }             
     }
 
@@ -76,7 +98,7 @@ public class EnergyOptimizationServer {
             return new StreamObserver<OptimizationRequest>() {
                 @Override
                 public void onNext(OptimizationRequest request) {
-                    int recommendedBrightness = 50; // simulate calculation
+                    int recommendedBrightness = 50; 
                     OptimizationResponse response = OptimizationResponse.newBuilder()
                             .setRecommendedBrightnessLevel(recommendedBrightness)
                             .setEstimatedEnergySaving(15.0f)

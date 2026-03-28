@@ -4,8 +4,10 @@
  */
 package com.smartcity.smart.lighting.system;
 import grpc.generated.streetlight.*;
+import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 /**
  *
@@ -17,6 +19,7 @@ public class StreetLightControlServer {
     public static void main(String[] args) throws Exception {
         Server server = ServerBuilder.forPort(50051)
                 .addService(new StreetLightServiceImpl())
+                .intercept(new JwtServerInterceptor())
                 .build();
 
         server.start();
@@ -28,6 +31,11 @@ public class StreetLightControlServer {
 
         @Override
         public void setBrightness(SetBrightnessRequest request, StreamObserver<SetBrightnessResponse> responseObserver) {
+            try{
+            if (request.getLightID().isEmpty()) {
+            throw new IllegalArgumentException("Light ID cannot be empty");
+            }
+            
             System.out.println("Setting brightness for " + request.getLightID());
 
             SetBrightnessResponse response = SetBrightnessResponse.newBuilder()
@@ -36,20 +44,42 @@ public class StreetLightControlServer {
                     .build();
 
             responseObserver.onNext(response);
-            responseObserver.onCompleted();
+            responseObserver.onCompleted();            
+            } catch (IllegalArgumentException e) {        
+                responseObserver.onError(
+                Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
+                );
+            } catch (Exception e) {        
+                responseObserver.onError(
+                Status.INTERNAL.withDescription("Street light error").asRuntimeException()
+                );
+            }
         }
 
         @Override
         public void getLightStatus(GetLightStatusRequest request, StreamObserver<GetLightStatusResponse> responseObserver) {
-
-            GetLightStatusResponse response = GetLightStatusResponse.newBuilder()
+            try{
+                if (request.getLightID().isEmpty()) {
+                throw new IllegalArgumentException("Light ID cannot be empty");
+                }
+                
+                GetLightStatusResponse response = GetLightStatusResponse.newBuilder()
                     .setBrightnessLevel(70)
                     .setPowerConsumption(15.5f)
                     .setIsActive(true)
                     .build();
 
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+            } catch (IllegalArgumentException e) {        
+                responseObserver.onError(
+                Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
+                );
+            } catch (Exception e) {        
+                responseObserver.onError(
+                Status.INTERNAL.withDescription("Street light error").asRuntimeException()
+                );
+            }
         }
         @Override
         public StreamObserver<SetBrightnessRequest> adjustMultipleLights(StreamObserver<SetBrightnessResponse> responseObserver) { // <<< MODIFIED / NEW
