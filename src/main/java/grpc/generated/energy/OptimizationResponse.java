@@ -20,8 +20,10 @@ private static final long serialVersionUID = 0L;
     super(builder);
   }
   private OptimizationResponse() {
+    locationID_ = "";
     recommendedBrightnessLevel_ = 0;
     estimatedEnergySaving_ = 0F;
+    trafficStatus_ = "";
   }
 
   @java.lang.Override
@@ -48,14 +50,26 @@ private static final long serialVersionUID = 0L;
           case 0:
             done = true;
             break;
-          case 8: {
+          case 10: {
+            java.lang.String s = input.readStringRequireUtf8();
+
+            locationID_ = s;
+            break;
+          }
+          case 16: {
 
             recommendedBrightnessLevel_ = input.readInt32();
             break;
           }
-          case 21: {
+          case 29: {
 
             estimatedEnergySaving_ = input.readFloat();
+            break;
+          }
+          case 34: {
+            java.lang.String s = input.readStringRequireUtf8();
+
+            trafficStatus_ = s;
             break;
           }
           default: {
@@ -90,22 +104,90 @@ private static final long serialVersionUID = 0L;
             grpc.generated.energy.OptimizationResponse.class, grpc.generated.energy.OptimizationResponse.Builder.class);
   }
 
-  public static final int RECOMMENDEDBRIGHTNESSLEVEL_FIELD_NUMBER = 1;
+  public static final int LOCATIONID_FIELD_NUMBER = 1;
+  private volatile java.lang.Object locationID_;
+  /**
+   * <code>string locationID = 1;</code>
+   */
+  public java.lang.String getLocationID() {
+    java.lang.Object ref = locationID_;
+    if (ref instanceof java.lang.String) {
+      return (java.lang.String) ref;
+    } else {
+      com.google.protobuf.ByteString bs = 
+          (com.google.protobuf.ByteString) ref;
+      java.lang.String s = bs.toStringUtf8();
+      locationID_ = s;
+      return s;
+    }
+  }
+  /**
+   * <code>string locationID = 1;</code>
+   */
+  public com.google.protobuf.ByteString
+      getLocationIDBytes() {
+    java.lang.Object ref = locationID_;
+    if (ref instanceof java.lang.String) {
+      com.google.protobuf.ByteString b = 
+          com.google.protobuf.ByteString.copyFromUtf8(
+              (java.lang.String) ref);
+      locationID_ = b;
+      return b;
+    } else {
+      return (com.google.protobuf.ByteString) ref;
+    }
+  }
+
+  public static final int RECOMMENDEDBRIGHTNESSLEVEL_FIELD_NUMBER = 2;
   private int recommendedBrightnessLevel_;
   /**
-   * <code>int32 recommendedBrightnessLevel = 1;</code>
+   * <code>int32 recommendedBrightnessLevel = 2;</code>
    */
   public int getRecommendedBrightnessLevel() {
     return recommendedBrightnessLevel_;
   }
 
-  public static final int ESTIMATEDENERGYSAVING_FIELD_NUMBER = 2;
+  public static final int ESTIMATEDENERGYSAVING_FIELD_NUMBER = 3;
   private float estimatedEnergySaving_;
   /**
-   * <code>float estimatedEnergySaving = 2;</code>
+   * <code>float estimatedEnergySaving = 3;</code>
    */
   public float getEstimatedEnergySaving() {
     return estimatedEnergySaving_;
+  }
+
+  public static final int TRAFFICSTATUS_FIELD_NUMBER = 4;
+  private volatile java.lang.Object trafficStatus_;
+  /**
+   * <code>string trafficStatus = 4;</code>
+   */
+  public java.lang.String getTrafficStatus() {
+    java.lang.Object ref = trafficStatus_;
+    if (ref instanceof java.lang.String) {
+      return (java.lang.String) ref;
+    } else {
+      com.google.protobuf.ByteString bs = 
+          (com.google.protobuf.ByteString) ref;
+      java.lang.String s = bs.toStringUtf8();
+      trafficStatus_ = s;
+      return s;
+    }
+  }
+  /**
+   * <code>string trafficStatus = 4;</code>
+   */
+  public com.google.protobuf.ByteString
+      getTrafficStatusBytes() {
+    java.lang.Object ref = trafficStatus_;
+    if (ref instanceof java.lang.String) {
+      com.google.protobuf.ByteString b = 
+          com.google.protobuf.ByteString.copyFromUtf8(
+              (java.lang.String) ref);
+      trafficStatus_ = b;
+      return b;
+    } else {
+      return (com.google.protobuf.ByteString) ref;
+    }
   }
 
   private byte memoizedIsInitialized = -1;
@@ -122,11 +204,17 @@ private static final long serialVersionUID = 0L;
   @java.lang.Override
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
+    if (!getLocationIDBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, locationID_);
+    }
     if (recommendedBrightnessLevel_ != 0) {
-      output.writeInt32(1, recommendedBrightnessLevel_);
+      output.writeInt32(2, recommendedBrightnessLevel_);
     }
     if (estimatedEnergySaving_ != 0F) {
-      output.writeFloat(2, estimatedEnergySaving_);
+      output.writeFloat(3, estimatedEnergySaving_);
+    }
+    if (!getTrafficStatusBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 4, trafficStatus_);
     }
     unknownFields.writeTo(output);
   }
@@ -137,13 +225,19 @@ private static final long serialVersionUID = 0L;
     if (size != -1) return size;
 
     size = 0;
+    if (!getLocationIDBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, locationID_);
+    }
     if (recommendedBrightnessLevel_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(1, recommendedBrightnessLevel_);
+        .computeInt32Size(2, recommendedBrightnessLevel_);
     }
     if (estimatedEnergySaving_ != 0F) {
       size += com.google.protobuf.CodedOutputStream
-        .computeFloatSize(2, estimatedEnergySaving_);
+        .computeFloatSize(3, estimatedEnergySaving_);
+    }
+    if (!getTrafficStatusBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(4, trafficStatus_);
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -161,12 +255,16 @@ private static final long serialVersionUID = 0L;
     grpc.generated.energy.OptimizationResponse other = (grpc.generated.energy.OptimizationResponse) obj;
 
     boolean result = true;
+    result = result && getLocationID()
+        .equals(other.getLocationID());
     result = result && (getRecommendedBrightnessLevel()
         == other.getRecommendedBrightnessLevel());
     result = result && (
         java.lang.Float.floatToIntBits(getEstimatedEnergySaving())
         == java.lang.Float.floatToIntBits(
             other.getEstimatedEnergySaving()));
+    result = result && getTrafficStatus()
+        .equals(other.getTrafficStatus());
     result = result && unknownFields.equals(other.unknownFields);
     return result;
   }
@@ -178,11 +276,15 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
+    hash = (37 * hash) + LOCATIONID_FIELD_NUMBER;
+    hash = (53 * hash) + getLocationID().hashCode();
     hash = (37 * hash) + RECOMMENDEDBRIGHTNESSLEVEL_FIELD_NUMBER;
     hash = (53 * hash) + getRecommendedBrightnessLevel();
     hash = (37 * hash) + ESTIMATEDENERGYSAVING_FIELD_NUMBER;
     hash = (53 * hash) + java.lang.Float.floatToIntBits(
         getEstimatedEnergySaving());
+    hash = (37 * hash) + TRAFFICSTATUS_FIELD_NUMBER;
+    hash = (53 * hash) + getTrafficStatus().hashCode();
     hash = (29 * hash) + unknownFields.hashCode();
     memoizedHashCode = hash;
     return hash;
@@ -320,9 +422,13 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
+      locationID_ = "";
+
       recommendedBrightnessLevel_ = 0;
 
       estimatedEnergySaving_ = 0F;
+
+      trafficStatus_ = "";
 
       return this;
     }
@@ -350,8 +456,10 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public grpc.generated.energy.OptimizationResponse buildPartial() {
       grpc.generated.energy.OptimizationResponse result = new grpc.generated.energy.OptimizationResponse(this);
+      result.locationID_ = locationID_;
       result.recommendedBrightnessLevel_ = recommendedBrightnessLevel_;
       result.estimatedEnergySaving_ = estimatedEnergySaving_;
+      result.trafficStatus_ = trafficStatus_;
       onBuilt();
       return result;
     }
@@ -400,11 +508,19 @@ private static final long serialVersionUID = 0L;
 
     public Builder mergeFrom(grpc.generated.energy.OptimizationResponse other) {
       if (other == grpc.generated.energy.OptimizationResponse.getDefaultInstance()) return this;
+      if (!other.getLocationID().isEmpty()) {
+        locationID_ = other.locationID_;
+        onChanged();
+      }
       if (other.getRecommendedBrightnessLevel() != 0) {
         setRecommendedBrightnessLevel(other.getRecommendedBrightnessLevel());
       }
       if (other.getEstimatedEnergySaving() != 0F) {
         setEstimatedEnergySaving(other.getEstimatedEnergySaving());
+      }
+      if (!other.getTrafficStatus().isEmpty()) {
+        trafficStatus_ = other.trafficStatus_;
+        onChanged();
       }
       this.mergeUnknownFields(other.unknownFields);
       onChanged();
@@ -435,15 +551,84 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
+    private java.lang.Object locationID_ = "";
+    /**
+     * <code>string locationID = 1;</code>
+     */
+    public java.lang.String getLocationID() {
+      java.lang.Object ref = locationID_;
+      if (!(ref instanceof java.lang.String)) {
+        com.google.protobuf.ByteString bs =
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        locationID_ = s;
+        return s;
+      } else {
+        return (java.lang.String) ref;
+      }
+    }
+    /**
+     * <code>string locationID = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getLocationIDBytes() {
+      java.lang.Object ref = locationID_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        locationID_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    /**
+     * <code>string locationID = 1;</code>
+     */
+    public Builder setLocationID(
+        java.lang.String value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  
+      locationID_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string locationID = 1;</code>
+     */
+    public Builder clearLocationID() {
+      
+      locationID_ = getDefaultInstance().getLocationID();
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string locationID = 1;</code>
+     */
+    public Builder setLocationIDBytes(
+        com.google.protobuf.ByteString value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+      
+      locationID_ = value;
+      onChanged();
+      return this;
+    }
+
     private int recommendedBrightnessLevel_ ;
     /**
-     * <code>int32 recommendedBrightnessLevel = 1;</code>
+     * <code>int32 recommendedBrightnessLevel = 2;</code>
      */
     public int getRecommendedBrightnessLevel() {
       return recommendedBrightnessLevel_;
     }
     /**
-     * <code>int32 recommendedBrightnessLevel = 1;</code>
+     * <code>int32 recommendedBrightnessLevel = 2;</code>
      */
     public Builder setRecommendedBrightnessLevel(int value) {
       
@@ -452,7 +637,7 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>int32 recommendedBrightnessLevel = 1;</code>
+     * <code>int32 recommendedBrightnessLevel = 2;</code>
      */
     public Builder clearRecommendedBrightnessLevel() {
       
@@ -463,13 +648,13 @@ private static final long serialVersionUID = 0L;
 
     private float estimatedEnergySaving_ ;
     /**
-     * <code>float estimatedEnergySaving = 2;</code>
+     * <code>float estimatedEnergySaving = 3;</code>
      */
     public float getEstimatedEnergySaving() {
       return estimatedEnergySaving_;
     }
     /**
-     * <code>float estimatedEnergySaving = 2;</code>
+     * <code>float estimatedEnergySaving = 3;</code>
      */
     public Builder setEstimatedEnergySaving(float value) {
       
@@ -478,11 +663,80 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>float estimatedEnergySaving = 2;</code>
+     * <code>float estimatedEnergySaving = 3;</code>
      */
     public Builder clearEstimatedEnergySaving() {
       
       estimatedEnergySaving_ = 0F;
+      onChanged();
+      return this;
+    }
+
+    private java.lang.Object trafficStatus_ = "";
+    /**
+     * <code>string trafficStatus = 4;</code>
+     */
+    public java.lang.String getTrafficStatus() {
+      java.lang.Object ref = trafficStatus_;
+      if (!(ref instanceof java.lang.String)) {
+        com.google.protobuf.ByteString bs =
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        trafficStatus_ = s;
+        return s;
+      } else {
+        return (java.lang.String) ref;
+      }
+    }
+    /**
+     * <code>string trafficStatus = 4;</code>
+     */
+    public com.google.protobuf.ByteString
+        getTrafficStatusBytes() {
+      java.lang.Object ref = trafficStatus_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        trafficStatus_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    /**
+     * <code>string trafficStatus = 4;</code>
+     */
+    public Builder setTrafficStatus(
+        java.lang.String value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  
+      trafficStatus_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string trafficStatus = 4;</code>
+     */
+    public Builder clearTrafficStatus() {
+      
+      trafficStatus_ = getDefaultInstance().getTrafficStatus();
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string trafficStatus = 4;</code>
+     */
+    public Builder setTrafficStatusBytes(
+        com.google.protobuf.ByteString value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+      
+      trafficStatus_ = value;
       onChanged();
       return this;
     }

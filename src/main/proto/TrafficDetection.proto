@@ -21,6 +21,7 @@ message TrafficRequest {
 
 // The response message containing traffic details
 message TrafficResponse {
+    
   int32 vehicleCount = 1;
   string trafficStatus = 2;
 }

@@ -3,9 +3,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.smartcity.smart.lighting.system;
+
 import grpc.generated.energy.*;
 import grpc.generated.streetlight.*;
 import grpc.generated.traffic.*;
+import io.grpc.Context;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -16,11 +18,11 @@ import io.grpc.Status;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.TimeUnit;
+
 /**
  *
  * @author darkp
  */
-
 public class EnergyOptimizationServer {
 
     public static void main(String[] args) throws Exception {
@@ -34,74 +36,137 @@ public class EnergyOptimizationServer {
         server.awaitTermination();
     }
 
+    private static int calculateBrightness(String traffic) {
+        int hour = java.time.LocalTime.now().getHour();
+        String weather = Math.random() > 0.5 ? "clear" : "rainy";
+
+        int baseBrightness;
+
+        // Traffic
+        switch (traffic) {
+            case "low":
+                baseBrightness = (int) (Math.random() * 30);
+                break;
+            case "medium":
+                baseBrightness = (int) (Math.random() * 60);
+                break;
+            default:
+                baseBrightness = (int) (Math.random() * 80);
+        }
+
+        // Time (if night time, brighter)
+        if (hour >= 18 || hour <= 6) {
+            baseBrightness += (int) (Math.random() * 10);
+        }
+
+        // Weather (if rain, brighter)
+        if (weather.equals("rainy")) {
+            baseBrightness += (int) (Math.random() * 10);
+        }
+
+        // Cap max
+        int brightness = Math.min(baseBrightness, 100);
+        return brightness;
+    }
+
+    public static float calculateSaving(int brightness) {
+        // calculate enegy saving
+        int baselineBrightness = 90; // default
+        float maxPower = 100; // watts at full brightness
+        float currentPower = (brightness / 100.0f) * maxPower;
+        float baselinePower = (baselineBrightness / 100.0f) * maxPower;
+
+        float energySaving = ((baselinePower - currentPower) / baselinePower) * 100;
+        energySaving = Math.max(0, energySaving);
+        return Math.round(energySaving * 10.0) / 10.0f;
+    }
+
     static class EnergyServiceImpl extends EnergyOptimizationServiceGrpc.EnergyOptimizationServiceImplBase {
 
         @Override
         public void optimizeLighting(OptimizationRequest request, StreamObserver<OptimizationResponse> responseObserver) {
-             try {
-            if (request.getLocationID().isEmpty()) {
-            throw new IllegalArgumentException("Location ID cannot be empty");
-            } 
-            
-            // Call Traffic Service
-            ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
-                    .usePlaintext()
-                    .build();
+            try {
+                if (request.getLocationID().isEmpty()) {
+                    throw new IllegalArgumentException("Location ID cannot be empty");
+                }
 
-            TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub =
-                    TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
-                    .withDeadlineAfter(3, TimeUnit.SECONDS);
-            String jwtToken = JwtUtil.generateToken("Energy-Service");
-            Metadata metadata = new Metadata();
-            Metadata.Key<String> authKey =
-                Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
-            metadata.put(authKey, jwtToken);
-            trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
-                    
-            TrafficResponse traffic = trafficStub.getTrafficLevel(
-                    TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
-            );
+                // Call Traffic Service
+                ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
+                        .usePlaintext()
+                        .build();
 
-            int brightness;
+                TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub
+                        = TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
+                                .withDeadlineAfter(3, TimeUnit.SECONDS);
 
-            if (traffic.getTrafficStatus().toLowerCase().equals("low")) {
-                brightness = 30;
-            } else if (traffic.getTrafficStatus().toLowerCase().equals("medium")) {
-                brightness = 60;
-            } else {
-                brightness = 90;
+                // JWT authentication
+                String jwtToken = JwtUtil.generateToken("Energy-Service");
+                Metadata metadata = new Metadata();
+                Metadata.Key<String> authKey
+                        = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
+                metadata.put(authKey, jwtToken);
+                trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
+
+                TrafficResponse traffic = trafficStub.getTrafficLevel(
+                        TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
+                );
+                int brightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
+                float energySaving = calculateSaving(brightness);
+                OptimizationResponse response = OptimizationResponse.newBuilder()
+                        .setRecommendedBrightnessLevel(brightness)
+                        .setEstimatedEnergySaving(energySaving)
+                        .build();
+
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+
+                trafficChannel.shutdown();
+            } catch (IllegalArgumentException e) {
+                responseObserver.onError(
+                        Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
+                );
+            } catch (Exception e) {
+                responseObserver.onError(Status.INTERNAL.withDescription("Energy service error").asRuntimeException());
             }
-
-            OptimizationResponse response = OptimizationResponse.newBuilder()
-                    .setRecommendedBrightnessLevel(brightness)
-                    .setEstimatedEnergySaving(20.5f)
-                    .build();
-
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-
-            trafficChannel.shutdown();
-        } 
-        catch (IllegalArgumentException e) {        
-        responseObserver.onError(
-                Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException()
-        );
         }
-        catch (Exception e) 
-        {
-            responseObserver.onError(Status.INTERNAL.withDescription("Energy service error").asRuntimeException()); 
-        }             
-    }
 
-        public StreamObserver<OptimizationRequest> monitorEnergy(StreamObserver<OptimizationResponse> responseObserver) 
-        { 
+        public StreamObserver<OptimizationRequest> monitorEnergy(StreamObserver<OptimizationResponse> responseObserver) {
             return new StreamObserver<OptimizationRequest>() {
                 @Override
                 public void onNext(OptimizationRequest request) {
-                    int recommendedBrightness = 50; 
+                    if (Context.current().isCancelled()) {
+                        System.out.println("Client cancelled energy monitoring");
+                        return;
+                    }
+                    // Call Traffic Service
+                    ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
+                            .usePlaintext()
+                            .build();
+
+                    TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub
+                            = TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
+                                    .withDeadlineAfter(3, TimeUnit.SECONDS);
+
+                    // JWT authentication
+                    String jwtToken = JwtUtil.generateToken("Energy-Service");
+                    Metadata metadata = new Metadata();
+                    Metadata.Key<String> authKey
+                            = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
+                    metadata.put(authKey, jwtToken);
+                    trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
+
+                    TrafficResponse traffic = trafficStub.getTrafficLevel(
+                            TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
+                    );
+
+                    int recommendedBrightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
+                    float energySaving = calculateSaving(recommendedBrightness);
+
                     OptimizationResponse response = OptimizationResponse.newBuilder()
+                            .setLocationID(request.getLocationID())
                             .setRecommendedBrightnessLevel(recommendedBrightness)
-                            .setEstimatedEnergySaving(15.0f)
+                            .setEstimatedEnergySaving(energySaving)
+                            .setTrafficStatus(traffic.getTrafficStatus())
                             .build();
                     responseObserver.onNext(response);
                 }

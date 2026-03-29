@@ -8,12 +8,32 @@ public interface OptimizationResponseOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>int32 recommendedBrightnessLevel = 1;</code>
+   * <code>string locationID = 1;</code>
+   */
+  java.lang.String getLocationID();
+  /**
+   * <code>string locationID = 1;</code>
+   */
+  com.google.protobuf.ByteString
+      getLocationIDBytes();
+
+  /**
+   * <code>int32 recommendedBrightnessLevel = 2;</code>
    */
   int getRecommendedBrightnessLevel();
 
   /**
-   * <code>float estimatedEnergySaving = 2;</code>
+   * <code>float estimatedEnergySaving = 3;</code>
    */
   float getEstimatedEnergySaving();
+
+  /**
+   * <code>string trafficStatus = 4;</code>
+   */
+  java.lang.String getTrafficStatus();
+  /**
+   * <code>string trafficStatus = 4;</code>
+   */
+  com.google.protobuf.ByteString
+      getTrafficStatusBytes();
 }

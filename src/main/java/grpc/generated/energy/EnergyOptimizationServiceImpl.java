@@ -36,16 +36,17 @@ public final class EnergyOptimizationServiceImpl {
       "\n\030EnergyOptimization.proto\022\006energy\"c\n\023Op" +
       "timizationRequest\022\022\n\nlocationID\030\001 \001(\t\022\026\n" +
       "\016trafficDensity\030\002 \001(\t\022 \n\030currentEnergyCo" +
-      "nsumption\030\003 \001(\002\"Y\n\024OptimizationResponse\022" +
-      "\"\n\032recommendedBrightnessLevel\030\001 \001(\005\022\035\n\025e" +
-      "stimatedEnergySaving\030\002 \001(\0022\274\001\n\031EnergyOpt" +
-      "imizationService\022O\n\020OptimizeLighting\022\033.e" +
-      "nergy.OptimizationRequest\032\034.energy.Optim" +
-      "izationResponse\"\000\022N\n\rmonitorEnergy\022\033.ene" +
-      "rgy.OptimizationRequest\032\034.energy.Optimiz" +
-      "ationResponse(\0010\001B8\n\025grpc.generated.ener" +
-      "gyB\035EnergyOptimizationServiceImplP\001b\006pro" +
-      "to3"
+      "nsumption\030\003 \001(\002\"\204\001\n\024OptimizationResponse" +
+      "\022\022\n\nlocationID\030\001 \001(\t\022\"\n\032recommendedBrigh" +
+      "tnessLevel\030\002 \001(\005\022\035\n\025estimatedEnergySavin" +
+      "g\030\003 \001(\002\022\025\n\rtrafficStatus\030\004 \001(\t2\274\001\n\031Energ" +
+      "yOptimizationService\022O\n\020OptimizeLighting" +
+      "\022\033.energy.OptimizationRequest\032\034.energy.O" +
+      "ptimizationResponse\"\000\022N\n\rmonitorEnergy\022\033" +
+      ".energy.OptimizationRequest\032\034.energy.Opt" +
+      "imizationResponse(\0010\001B8\n\025grpc.generated." +
+      "energyB\035EnergyOptimizationServiceImplP\001b" +
+      "\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -70,7 +71,7 @@ public final class EnergyOptimizationServiceImpl {
     internal_static_energy_OptimizationResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_energy_OptimizationResponse_descriptor,
-        new java.lang.String[] { "RecommendedBrightnessLevel", "EstimatedEnergySaving", });
+        new java.lang.String[] { "LocationID", "RecommendedBrightnessLevel", "EstimatedEnergySaving", "TrafficStatus", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

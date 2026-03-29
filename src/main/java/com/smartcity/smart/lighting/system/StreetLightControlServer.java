@@ -82,13 +82,16 @@ public class StreetLightControlServer {
             }
         }
         @Override
-        public StreamObserver<SetBrightnessRequest> adjustMultipleLights(StreamObserver<SetBrightnessResponse> responseObserver) { // <<< MODIFIED / NEW
+        public StreamObserver<SetBrightnessRequest> adjustMultipleLights(StreamObserver<SetBrightnessResponse> responseObserver) { 
+            
             return new StreamObserver<SetBrightnessRequest>() {
                 int count = 0;
+                String lightMessage="";
 
-                @Override
+                @Override                
                 public void onNext(SetBrightnessRequest request) {
-                    System.out.println("Adjusting light " + request.getLightID() + " to " + request.getBrightnessLevel());
+                    
+                    lightMessage +=("Adjusting light " + request.getLightID() + " to " + request.getBrightnessLevel()+"\n");
                     count++;
                 }
 
@@ -101,7 +104,7 @@ public class StreetLightControlServer {
                 public void onCompleted() {
                     SetBrightnessResponse response = SetBrightnessResponse.newBuilder()
                             .setStatus(true)
-                            .setMessage("Adjusted " + count + " lights successfully")
+                            .setMessage(lightMessage+"Adjusted " + count + " lights successfully")
                             .build();
                     responseObserver.onNext(response);
                     responseObserver.onCompleted();

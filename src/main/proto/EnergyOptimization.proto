@@ -23,6 +23,8 @@ message OptimizationRequest {
 
 // The response message containing optimization result
 message OptimizationResponse {
-  int32 recommendedBrightnessLevel = 1;
-  float estimatedEnergySaving = 2;
+  string locationID=1;
+  int32 recommendedBrightnessLevel = 2;
+  float estimatedEnergySaving = 3;
+  string trafficStatus =4;
 }

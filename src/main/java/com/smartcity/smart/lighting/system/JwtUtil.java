@@ -16,7 +16,8 @@ import java.util.Date;
  */
 
 public class JwtUtil {
-    private static final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
+    private static final String SECRET = "secret-key-1234567890-for-smart-light-optimizing-system-2026-by-smy";
+    private static final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
     private static final long EXPIRATION_MS = 3600000; // 1 hour
 
     public static String generateToken(String clientId) { 
