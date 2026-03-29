@@ -21,13 +21,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ClientGUIFrameForm extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ClientGUIFrameForm.class.getName());
-
+    private ClientCallStreamObserver<?> clientStreamObserver;
+        
     /**
      * Creates new form ClientGUIFrameForm
      */
     public ClientGUIFrameForm() {
         setTitle("Smart City Lighting System");
         initComponents();
+        cancelBtn.setEnabled(false);
     }
 
     /**
@@ -64,7 +66,7 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
         resultArea = new javax.swing.JTextArea();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
+        cancelBtn = new javax.swing.JButton();
 
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
@@ -190,10 +192,14 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
         jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel6.setText("Smart City Lighting System");
 
-        jButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton1.setForeground(new java.awt.Color(204, 0, 51));
-        jButton1.setText("Cancel Stream");
-        jButton1.setEnabled(false);
+        cancelBtn.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        cancelBtn.setForeground(new java.awt.Color(204, 0, 51));
+        cancelBtn.setText("Cancel Stream");
+        cancelBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelBtnActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -212,7 +218,7 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(cancelBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -238,7 +244,7 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
                 .addGap(7, 7, 7)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(jButton1))
+                    .addComponent(cancelBtn))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 397, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -426,26 +432,41 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
             CountDownLatch latch = new CountDownLatch(1);
             resultArea.append("[Server Stream] \n");
             AtomicInteger count = new AtomicInteger(1);
-            stub.streamTrafficUpdates(TrafficRequest.newBuilder().setLocationID(location).build(),
-                    new StreamObserver<TrafficResponse>() {
-                public void onNext(TrafficResponse value) {
+            
+            ClientResponseObserver<TrafficRequest, TrafficResponse> responseObserver =
+                new ClientResponseObserver<TrafficRequest, TrafficResponse>() {
+
+            @Override
+            public void beforeStart(ClientCallStreamObserver<TrafficRequest> requestStream) {
+                cancelBtn.setEnabled(true);
+                clientStreamObserver = requestStream; // (store for cancel)                
+            }
+
+            @Override
+            public void onNext(TrafficResponse value) {
                     resultArea.append("Traffic at: " + location + ", Quarter-" + count.getAndIncrement() + ", Traffic: " + value.getTrafficStatus()
                             + ", Vehicles: " + value.getVehicleCount() + "\n");
                 }
-
+@Override
                 public void onError(Throwable t) {
                     resultArea.append("Server stream error: " + t.getMessage() + "\n");
+                    cancelBtn.setEnabled(false);
                     latch.countDown();
                 }
-
+@Override
                 public void onCompleted() {
                     resultArea.append("Server streaming completed.\n");
+                    cancelBtn.setEnabled(false);
                     latch.countDown();
                 }
-            });
-
-            latch.await();
-            channel.shutdown();
+        };
+            
+            
+            stub.streamTrafficUpdates(TrafficRequest.newBuilder().setLocationID(location).build(),
+                    responseObserver
+            );
+            //latch.await();
+            //channel.shutdown();
 
         } catch (IllegalArgumentException e) {
             resultArea.append("Error in stream traffic update: INVALID_ARGUMENT: " + e.getMessage()+"\n");
@@ -510,26 +531,40 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
             CountDownLatch latch = new CountDownLatch(1);
 
             resultArea.append("[BiDi Stream]\n");
+            
+            ClientResponseObserver<OptimizationRequest, OptimizationResponse> responseObserver =
+                new ClientResponseObserver<OptimizationRequest, OptimizationResponse>() {
 
-            StreamObserver<OptimizationRequest> requestObserver = stub.monitorEnergy(
-                    new StreamObserver<OptimizationResponse>() {
-                public void onNext(OptimizationResponse value) {
+            @Override
+            public void beforeStart(ClientCallStreamObserver<OptimizationRequest> requestStream) {
+                cancelBtn.setEnabled(true);
+                clientStreamObserver = requestStream; 
+            }
+
+            @Override
+            public void onNext(OptimizationResponse value) {
                     resultArea.append("Energy Optimization for " + value.getLocationID()
                             + ", Traffic= " + value.getTrafficStatus()
                             + ", Brightness= " + value.getRecommendedBrightnessLevel()
                             + ", Estimated Saving= " + value.getEstimatedEnergySaving() + "\n");
-                }
+                }              
 
-                public void onError(Throwable t) {
+                @Override
+            public void onError(Throwable t) {
                     resultArea.append("BiDi streaming error: " + t.getMessage() + "\n");
+                    cancelBtn.setEnabled(false);
                     latch.countDown();
                 }
 
-                public void onCompleted() {
+            @Override
+            public void onCompleted() {
                     resultArea.append("BiDi streaming completed.\n");
+                    cancelBtn.setEnabled(false);
                     latch.countDown();
                 }
-            });
+        };
+
+            StreamObserver<OptimizationRequest> requestObserver = stub.monitorEnergy(responseObserver);
 
             requestObserver.onNext(OptimizationRequest.newBuilder().setLocationID("ZONE_A").build());
             requestObserver.onNext(OptimizationRequest.newBuilder().setLocationID("ZONE_B").build());
@@ -538,8 +573,8 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
             requestObserver.onNext(OptimizationRequest.newBuilder().setLocationID("ZONE_E").build());
             requestObserver.onCompleted();
 
-            latch.await();
-            channel.shutdown();
+            //latch.await();
+            //channel.shutdown();
 
         } catch (IllegalArgumentException e) {
             resultArea.append("Error in monitor energy bi-directional streaming: INVALID_ARGUMENT: " + e.getMessage()+"\n");
@@ -547,6 +582,22 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
             resultArea.append("Error in monitor energy bi-directional streaming: " + ex.getMessage() + "\n");
         }
     }//GEN-LAST:event_bidiStreamBtnActionPerformed
+
+    private void cancelBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelBtnActionPerformed
+        // TODO add your handling code here:
+        try {
+        if (clientStreamObserver != null) {
+            clientStreamObserver.cancel("User cancelled", null); // ⭐ ADDED
+            resultArea.append("Stream cancelled by user.\n");
+            cancelBtn.setEnabled(false);
+        } else {
+            resultArea.append("No active stream.\n");
+            cancelBtn.setEnabled(false);
+        }
+    } catch (Exception e) {
+        resultArea.append("Cancel error: " + e.getMessage() + "\n");
+    }
+    }//GEN-LAST:event_cancelBtnActionPerformed
 
     // ================= JWT =================
     private <T extends AbstractStub<T>> T attachJwt(T stub) {
@@ -586,11 +637,11 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bidiStreamBtn;
+    private javax.swing.JButton cancelBtn;
     private javax.swing.JButton clientStreamBtn;
     private javax.swing.JTextField energyLocField;
     private javax.swing.JButton getStatusBtn;
     private javax.swing.JButton getTrafficBtn;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
