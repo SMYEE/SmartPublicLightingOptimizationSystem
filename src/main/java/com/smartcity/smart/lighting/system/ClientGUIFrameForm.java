@@ -448,13 +448,13 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
                     resultArea.append("Traffic at: " + location + ", Quarter-" + count.getAndIncrement() + ", Traffic: " + value.getTrafficStatus()
                             + ", Vehicles: " + value.getVehicleCount() + "\n");
                 }
-@Override
+            @Override
                 public void onError(Throwable t) {
                     resultArea.append("Server stream error: " + t.getMessage() + "\n");
                     cancelBtn.setEnabled(false);
                     latch.countDown();
                 }
-@Override
+            @Override
                 public void onCompleted() {
                     resultArea.append("Server streaming completed.\n");
                     cancelBtn.setEnabled(false);
@@ -550,7 +550,7 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
                             + ", Estimated Saving= " + value.getEstimatedEnergySaving() + "\n");
                 }              
 
-                @Override
+            @Override
             public void onError(Throwable t) {
                     resultArea.append("BiDi streaming error: " + t.getMessage() + "\n");
                     cancelBtn.setEnabled(false);

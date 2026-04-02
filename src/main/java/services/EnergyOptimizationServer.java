@@ -114,11 +114,13 @@ public class EnergyOptimizationServer {
                         = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
                 metadata.put(authKey, jwtToken);
                 trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
-
+                // get traffic
                 TrafficResponse traffic = trafficStub.getTrafficLevel(
                         TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
                 );
+                // calculate recommend brightness
                 int brightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
+                // calculate energy saving
                 float energySaving = calculateSaving(brightness);
                 OptimizationResponse response = OptimizationResponse.newBuilder()
                         .setRecommendedBrightnessLevel(brightness)
@@ -143,6 +145,7 @@ public class EnergyOptimizationServer {
                 @Override
                 public void onNext(OptimizationRequest request) {
                     try {
+                        // service cancellation 
                         if (Context.current().isCancelled()) {
                             System.out.println("Client cancelled energy monitoring");
                             return;
@@ -167,12 +170,13 @@ public class EnergyOptimizationServer {
                                 = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
                         metadata.put(authKey, jwtToken);
                         trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
-
+                        // get traffic data
                         TrafficResponse traffic = trafficStub.getTrafficLevel(
                                 TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
                         );
-
+                        // calculate recommend brightness
                         int recommendedBrightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
+                        // calculate energy saving
                         float energySaving = calculateSaving(recommendedBrightness);
 
                         OptimizationResponse response = OptimizationResponse.newBuilder()
