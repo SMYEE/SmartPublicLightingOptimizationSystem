@@ -2,10 +2,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.smartcity.smart.lighting.system;
+package services;
 
+import authentication.JwtServerInterceptor;
+import Util.JwtUtil;
+import static Util.ServiceClientUtil.getServiceAddress;
 import grpc.generated.energy.*;
-import grpc.generated.streetlight.*;
 import grpc.generated.traffic.*;
 import io.grpc.Context;
 
@@ -18,6 +20,8 @@ import io.grpc.Status;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -91,7 +95,11 @@ public class EnergyOptimizationServer {
                 }
 
                 // Call Traffic Service
-                ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
+                String address = getServiceAddress("traffic");
+                String[] parts = address.split(":");
+
+                ManagedChannel trafficChannel = ManagedChannelBuilder
+                        .forAddress(parts[0], Integer.parseInt(parts[1]))
                         .usePlaintext()
                         .build();
 
@@ -134,41 +142,49 @@ public class EnergyOptimizationServer {
             return new StreamObserver<OptimizationRequest>() {
                 @Override
                 public void onNext(OptimizationRequest request) {
-                    if (Context.current().isCancelled()) {
-                        System.out.println("Client cancelled energy monitoring");
-                        return;
+                    try {
+                        if (Context.current().isCancelled()) {
+                            System.out.println("Client cancelled energy monitoring");
+                            return;
+                        }
+                        // Call Traffic Service
+                        String address = getServiceAddress("traffic");
+                        String[] parts = address.split(":");
+
+                        ManagedChannel trafficChannel = ManagedChannelBuilder
+                                .forAddress(parts[0], Integer.parseInt(parts[1]))
+                                .usePlaintext()
+                                .build();
+
+                        TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub
+                                = TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
+                                        .withDeadlineAfter(3, TimeUnit.SECONDS);
+
+                        // JWT authentication
+                        String jwtToken = JwtUtil.generateToken("Energy-Service");
+                        Metadata metadata = new Metadata();
+                        Metadata.Key<String> authKey
+                                = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
+                        metadata.put(authKey, jwtToken);
+                        trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
+
+                        TrafficResponse traffic = trafficStub.getTrafficLevel(
+                                TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
+                        );
+
+                        int recommendedBrightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
+                        float energySaving = calculateSaving(recommendedBrightness);
+
+                        OptimizationResponse response = OptimizationResponse.newBuilder()
+                                .setLocationID(request.getLocationID())
+                                .setRecommendedBrightnessLevel(recommendedBrightness)
+                                .setEstimatedEnergySaving(energySaving)
+                                .setTrafficStatus(traffic.getTrafficStatus())
+                                .build();
+                        responseObserver.onNext(response);
+                    } catch (Exception ex) {
+                        Logger.getLogger(EnergyOptimizationServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    // Call Traffic Service
-                    ManagedChannel trafficChannel = ManagedChannelBuilder.forAddress("localhost", 50052)
-                            .usePlaintext()
-                            .build();
-
-                    TrafficDetectionServiceGrpc.TrafficDetectionServiceBlockingStub trafficStub
-                            = TrafficDetectionServiceGrpc.newBlockingStub(trafficChannel)
-                                    .withDeadlineAfter(3, TimeUnit.SECONDS);
-
-                    // JWT authentication
-                    String jwtToken = JwtUtil.generateToken("Energy-Service");
-                    Metadata metadata = new Metadata();
-                    Metadata.Key<String> authKey
-                            = Metadata.Key.of("auth-token", Metadata.ASCII_STRING_MARSHALLER);
-                    metadata.put(authKey, jwtToken);
-                    trafficStub = MetadataUtils.attachHeaders(trafficStub, metadata);
-
-                    TrafficResponse traffic = trafficStub.getTrafficLevel(
-                            TrafficRequest.newBuilder().setLocationID(request.getLocationID()).build()
-                    );
-
-                    int recommendedBrightness = calculateBrightness(traffic.getTrafficStatus().toLowerCase());
-                    float energySaving = calculateSaving(recommendedBrightness);
-
-                    OptimizationResponse response = OptimizationResponse.newBuilder()
-                            .setLocationID(request.getLocationID())
-                            .setRecommendedBrightnessLevel(recommendedBrightness)
-                            .setEstimatedEnergySaving(energySaving)
-                            .setTrafficStatus(traffic.getTrafficStatus())
-                            .build();
-                    responseObserver.onNext(response);
                 }
 
                 @Override
@@ -178,7 +194,8 @@ public class EnergyOptimizationServer {
 
                 @Override
                 public void onCompleted() {
-                    responseObserver.onCompleted();
+                   responseObserver.onCompleted();
+    //trafficChannel.shutdown();                    
                 }
             };
         }

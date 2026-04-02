@@ -4,6 +4,7 @@
  */
 package com.smartcity.smart.lighting.system;
 
+import Util.JwtUtil;
 import grpc.generated.energy.*;
 import grpc.generated.registry.*;
 import grpc.generated.streetlight.*;
@@ -116,7 +117,7 @@ public class ClientGUIFrameForm extends javax.swing.JFrame {
 
         clientStreamBtn.setBackground(new java.awt.Color(204, 204, 204));
         clientStreamBtn.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        clientStreamBtn.setText("Adjust Multiple Lights");
+        clientStreamBtn.setText("Adjust All Lights in Current Location");
         clientStreamBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 clientStreamBtnActionPerformed(evt);

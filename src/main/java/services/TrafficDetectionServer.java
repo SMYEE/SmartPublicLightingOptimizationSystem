@@ -2,11 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.smartcity.smart.lighting.system;
+package services;
 
+import authentication.JwtServerInterceptor;
 import grpc.generated.traffic.*;
 import io.grpc.Context;
-import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.Status;
